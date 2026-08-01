@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>マイ資産取り崩し＆社会保険料シミュレーター (ver5.0)</title>
+  <style>
+    :root {
+      --primary: #2b5876;
+      --secondary: #4e4376;
+      --bg: #f4f7f6;
+      --card-bg: #ffffff;
+      --text: #333333;
+    }
+    body {
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .header-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    h1 {
+      color: var(--primary);
+      margin: 0;
+      font-size: 1.6rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 20px 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 5px;
+      margin-bottom: 15px;
+    }
+    h2 {
+      font-size: 1.2rem;
+      color: var(--primary);
+      margin: 0;
+    }
+    .section-subtitle {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: var(--secondary);
+      border-left: 4px solid var(--secondary);
+      padding-left: 8px;
+      margin: 15px 0 10px 0;
+      grid-column: 1 / -1;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      font-weight: bold;
+      font-size: 0.85rem;
+      margin-bottom: 5px;
+      color: #555;
+    }
+    input[type="number"], input[type="date"], input[type="text"], select {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+    .unit {
+      font-size: 0.78rem;
+      color: #666;
+      margin-top: 3px;
+      line-height: 1.3;
+    }
+    button.btn-calc {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button.btn-calc:hover {
+      opacity: 0.9;
+    }
+    .btn-action-sm {
+      background: #4a5568;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-action-sm:hover {
+      background: #2d3748;
+    }
+    .btn-config {
+      background: var(--primary);
+    }
+    .btn-config:hover {
+      background: var(--secondary);
+    }
+    .result-box {
+      background: #eef2f5;
+      border-left: 5px solid var(--primary);
+      padding: 15px;
+      margin-top: 15px;
+    }
+    .result-value {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+    .alert-tag, .safe-tag, .warn-tag {
+      display: inline-block;
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      margin-top: 5px;
+    }
+    .alert-tag { background: #e74c3c; }
+    .safe-tag { background: #27ae60; }
+    .warn-tag { background: #f39c12; }
+
+    .error-box {
+      background: #fce4e4;
+      border-left: 5px solid #e74c3c;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-weight: bold;
+      display: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: right;
+    }
+    th {
+      background-color: #f2f2f2;
+      text-align: center;
+    }
+
+    /* モーダルダイアログのスタイル */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #fff;
+      width: 90%;
+      max-width: 700px;
+      max-height: 85vh;
+      overflow-y: auto;
+      border-radius: 8px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      border-top: 1px solid #ddd;
+      padding-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-container">
+    <h1>マイ資産取り崩し＆社会保険料シミュレーター (ver5.0)</h1>
+    <div class="header-buttons">
+      <button class="btn-action-sm btn-config" onclick="openConfigModal()">⚙️ 税制・保険料設定</button>
+      <button class="btn-action-sm" onclick="resetForm()">初期値に戻す</button>
+    </div>
+  </div>
+
+  <!-- 1. 基本情報・地域特性 -->
+  <div class="card">
+    <div class="card-header">
+      <h2>1. 基本情報 & 地域区分（夫婦共通・個別設定）</h2>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="zip">郵便番号（級地判定）</label>
+        <input type="text" id="zip" value="100-0001" placeholder="100-0001">
+        <span class="unit">※住所から非課税ライン（級地）を自動判定</span>
+      </div>
+      <div class="form-group">
+        <label for="isCouple">世帯構成</label>
+        <select id="isCouple" onchange="toggleCoupleMode()">
+          <option value="couple" selected>夫婦世帯</option>
+          <option value="single">単身世帯</option>
+        </select>
+      </div>
+
+      <!-- 本人 -->
+      <div class="section-subtitle">👤 本人（主たる家計支持者）</div>
+      <div class="form-group">
+        <label for="dob">生年月日</label>
+        <input type="date" id="dob" value="1970-01-01">
+      </div>
+      <div class="form-group">
+        <label for="retireAge">年金受給開始予定年齢</label>
+        <select id="retireAge">
+          <option value="60">60歳（繰上げ・24%減額）</option>
+          <option value="65" selected>65歳（原則受給）</option>
+          <option value="70">70歳（繰下げ・42%増額）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="basePension">65歳時点の想定年金額（年間・万円）</label>
+        <input type="number" id="basePension" value="180">
+      </div>
+
+      <!-- 配偶者 -->
+      <div class="section-subtitle spouse-field">👥 配偶者</div>
+      <div class="form-group spouse-field">
+        <label for="dobSpouse">生年月日</label>
+        <input type="date" id="dobSpouse" value="1972-01-01">
+      </div>
+      <div class="form-group spouse-field">
+        <label for="retireAgeSpouse">年金受給開始予定年齢</label>
+        <select id="retireAgeSpouse">
+          <option value="60">60歳（繰上げ・24%減額）</option>
+          <option value="65" selected>65歳（原則受給）</option>
+          <option value="70">70歳（繰下げ・42%増額）</option>
+        </select>
+      </div>
+      <div class="form-group spouse-field">
+        <label for="basePensionSpouse">65歳時点の想定年金額（年間・万円）</label>
+        <input type="number" id="basePensionSpouse" value="100">
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 保有資産＆ 退職金・DC・iDeCo詳細設定 -->
+  <div class="card">
+    <div class="card-header">
+      <h2>2. 世帯保有資産 & 退職金・DC・iDeCo設定</h2>
+    </div>
+    <div class="form-grid">
+      <div class="section-subtitle">💰 共有資産（金融資産）</div>
+      <div class="form-group">
+        <label for="cash">現金預金（世帯合計）</label>
+        <input type="number" id="cash" value="1000" step="1">
+      </div>
+      <div class="form-group">
+        <label for="stocks">株式・投資信託（世帯合計評価額）</label>
+        <input type="number" id="stocks" value="1000" step="1">
+      </div>
+      <div class="form-group">
+        <label for="stockYield">株式想定利回り (%)</label>
+        <input type="number" id="stockYield" value="3.0" step="0.1">
+      </div>
+      <div class="form-group">
+        <label for="bonds">債券（世帯合計評価額）</label>
+        <input type="number" id="bonds" value="0">
+      </div>
+
+      <!-- 本人 退職金・DC等 -->
+      <div class="section-subtitle">👤 本人の退職・年金資産</div>
+      <div class="form-group">
+        <label for="earlyRetirePay">50代での早期退職金（1回目・万円）</label>
+        <input type="number" id="earlyRetirePay" value="0">
+        <span class="unit">※50代での受給実績があれば入力</span>
+      </div>
+      <div class="form-group">
+        <label for="earlyRetireAge">50代退職金の受取年齢</label>
+        <input type="number" id="earlyRetireAge" value="55">
+      </div>
+      <div class="form-group">
+        <label for="retirementPay">60代定年時の退職金（2回目/見込み・万円）</label>
+        <input type="number" id="retirementPay" value="1500">
+      </div>
+      <div class="form-group">
+        <label for="retirePayAge">定年退職金の受取年齢</label>
+        <select id="retirePayAge">
+          <option value="60" selected>60歳</option>
+          <option value="65">65歳</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="corpDc">企業DC（残高見込み・万円）</label>
+        <input type="number" id="corpDc" value="300" step="1">
+      </div>
+      <div class="form-group">
+        <label for="corpDcMethod">企業DC 受取り方法</label>
+        <select id="corpDcMethod">
+          <option value="lump" selected>一時金（退職金合算）</option>
+          <option value="annuity">年金（10年分割）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="ideco">iDeCo（残高見込み・万円）</label>
+        <input type="number" id="ideco" value="200" step="1">
+      </div>
+      <div class="form-group">
+        <label for="idecoPayAge">iDeCo 受取年齢</label>
+        <select id="idecoPayAge">
+          <option value="60">60歳</option>
+          <option value="65" selected>65歳</option>
+          <option value="70">70歳</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="idecoPayMethod">iDeCo 受取り方法</label>
+        <select id="idecoPayMethod">
+          <option value="lump">一時金（退職所得枠）</option>
+          <option value="annuity" selected>年金（10年分割 / 雑所得）</option>
+        </select>
+      </div>
+
+      <!-- 配偶者 退職金・DC等 -->
+      <div class="section-subtitle spouse-field">👥 配偶者の退職・年金資産</div>
+      <div class="form-group spouse-field">
+        <label for="earlyRetirePaySpouse">50代での早期退職金（1回目・万円）</label>
+        <input type="number" id="earlyRetirePaySpouse" value="0">
+      </div>
+      <div class="form-group spouse-field">
+        <label for="retirementPaySpouse">60代定年時の退職金（2回目/見込み・万円）</label>
+        <input type="number" id="retirementPaySpouse" value="300">
+      </div>
+      <div class="form-group spouse-field">
+        <label for="retirePayAgeSpouse">定年退職金の受取年齢</label>
+        <select id="retirePayAgeSpouse">
+          <option value="60" selected>60歳</option>
+          <option value="65">65歳</option>
+        </select>
+      </div>
+      <div class="form-group spouse-field">
+        <label for="idecoSpouse">iDeCo（残高見込み・万円）</label>
+        <input type="number" id="idecoSpouse" value="100" step="1">
+      </div>
+      <div class="form-group spouse-field">
+        <label for="idecoPayAgeSpouse">iDeCo 受取年齢</label>
+        <select id="idecoPayAgeSpouse">
+          <option value="60">60歳</option>
+          <option value="65" selected>65歳</option>
+          <option value="70">70歳</option>
+        </select>
+      </div>
+      <div class="form-group spouse-field">
+        <label for="idecoPayMethodSpouse">iDeCo 受取り方法</label>
+        <select id="idecoPayMethodSpouse">
+          <option value="lump" selected>一時金（退職所得枠）</option>
+          <option value="annuity">年金（10年分割 / 雑所得）</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 60代の生活費・就労設定 -->
+  <div class="card">
+    <div class="card-header">
+      <h2>3. 支出・就労プラン（60代前半）</h2>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="monthlyLiving">世帯基本生活費（月額・万円）</label>
+        <input type="number" id="monthlyLiving" value="28">
+        <span class="unit">※仕送り・手取り不労所得等がある場合は、その分を引いた金額を入力</span>
+      </div>
+      <div class="form-group">
+        <label for="workStyle60">本人60代前半の働き方</label>
+        <select id="workStyle60" onchange="handleWorkStyleChange()">
+          <option value="reemployed" selected>定年再雇用（同一グループ・継続）</option>
+          <option value="newjob">他社へ再就職 / パート・バイト</option>
+          <option value="retired">完全リタイア（就労なし）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="workIncome60">本人60代前半の年間就労収入（万円）</label>
+        <input type="number" id="workIncome60" value="180">
+      </div>
+
+      <div class="form-group spouse-field">
+        <label for="workStyle60Spouse">配偶者60代前半の働き方</label>
+        <select id="workStyle60Spouse" onchange="handleWorkStyleChange()">
+          <option value="reemployed">定年再雇用 / 継続雇用</option>
+          <option value="newjob" selected>他社へ再就職 / パート・バイト</option>
+          <option value="retired">完全リタイア（専業主婦・主夫含む）</option>
+        </select>
+      </div>
+      <div class="form-group spouse-field">
+        <label for="workIncome60Spouse">配偶者60代前半の年間就労収入（万円）</label>
+        <input type="number" id="workIncome60Spouse" value="100">
+      </div>
+
+      <div class="form-group">
+        <label for="propertyTax">固定資産税・住まい維持費（年間・万円）</label>
+        <input type="number" id="propertyTax" value="15" step="0.1">
+      </div>
+      <div class="form-group">
+        <label for="carCost">自動車年間維持費（年間・万円）</label>
+        <input type="number" id="carCost" value="20">
+      </div>
+    </div>
+  </div>
+
+  <div id="errorMessage" class="error-box"></div>
+
+  <button class="btn-calc" onclick="calculate()">シミュレーションを実行する</button>
+
+  <!-- 4. 試算結果エリア -->
+  <div class="card" id="resultCard" style="display:none; margin-top: 20px;">
+    <div class="card-header">
+      <h2>4. シミュレーション結果（本人が60〜70歳期間）</h2>
+    </div>
+    <div id="kyuchiInfo"></div>
+    <div id="pensionInfo" style="margin-top: 5px; font-weight: bold; color: var(--primary);"></div>
+    <div id="taxRuleWarning" style="margin-top: 5px;"></div>
+    
+    <div class="result-box">
+      <div>本人が60代前半時の世帯年間推定社会保険・介護保険料: <span class="result-value" id="socInsurance">0</span> 万円/年</div>
+      <div id="taxStatus"></div>
+    </div>
+
+    <div class="result-box">
+      <div>60代前半（本人）で必要な年間資産取り崩し額: <span class="result-value" id="yearlyWithdrawal">0</span> 万円/年</div>
+      <div class="unit">（月平均: <span id="monthlyWithdrawal">0</span> 万円取り崩し）</div>
+    </div>
+
+    <h3>本人が70歳時点の推計残存資産（世帯合計）</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>アセット種別</th>
+          <th>本人60歳時点</th>
+          <th>本人70歳時点（推計）</th>
+        </tr>
+      </thead>
+      <tbody id="assetTableBody">
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 税制設定モーダル -->
+<div id="configModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>⚙️ 税制・社会保険 パラメータ設定</h2>
+      <button class="btn-action-sm" onclick="closeConfigModal()">✕ 閉じる</button>
+    </div>
+    <div class="form-grid">
+      <div class="section-subtitle">1. 住民税非課税ライン（合計所得金額目安・万円）</div>
+      <div class="form-group">
+        <label for="cfg_taxFree1">1級地 (大都市部)</label>
+        <input type="number" id="cfg_taxFree1" step="0.1">
+      </div>
+      <div class="form-group">
+        <label for="cfg_taxFree2">2級地 (中核都市)</label>
+        <input type="number" id="cfg_taxFree2" step="0.1">
+      </div>
+      <div class="form-group">
+        <label for="cfg_taxFree3">3級地 (地方・町村部)</label>
+        <input type="number" id="cfg_taxFree3" step="0.1">
+      </div>
+
+      <div class="section-subtitle">2. 基本控除額（万円）</div>
+      <div class="form-group">
+        <label for="cfg_empMin">給与所得控除（最低額）</label>
+        <input type="number" id="cfg_empMin">
+      </div>
+      <div class="form-group">
+        <label for="cfg_penUnder65">公的年金等控除 (65歳未満)</label>
+        <input type="number" id="cfg_penUnder65">
+      </div>
+
+      <div class="section-subtitle">3. 社会保険料概算算出パラメータ</div>
+      <div class="form-group">
+        <label for="cfg_socTaxFreeBase">非課税世帯基本保険料（年間・万円）</label>
+        <input type="number" id="cfg_socTaxFreeBase">
+      </div>
+      <div class="form-group">
+        <label for="cfg_socTaxableBase">課税世帯基本保険料（年間・万円）</label>
+        <input type="number" id="cfg_socTaxableBase">
+      </div>
+      <div class="form-group">
+        <label for="cfg_socTaxableRate">所得対比保険料率 (%)</label>
+        <input type="number" id="cfg_socTaxableRate" step="0.1">
+      </div>
+
+      <div class="section-subtitle">4. 手取り率・給付率設定</div>
+      <div class="form-group">
+        <label for="cfg_penAge60Rate">60歳年金繰上げ給付率 (%)</label>
+        <input type="number" id="cfg_penAge60Rate" step="1">
+      </div>
+      <div class="form-group">
+        <label for="cfg_retireRate">退職金・DC・iDeCo手取り率 (%)</label>
+        <input type="number" id="cfg_retireRate" step="1">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-action-sm" style="background:#e74c3c;" onclick="resetConfigModal()">初期値に戻す</button>
+      <button class="btn-action-sm btn-config" onclick="saveConfigModal()">設定を保存して再計算</button>
+    </div>
+  </div>
+</div>
+
+<!-- 税制外部パラメータファイルを読み込む -->
+<script src="tax_config.js"></script>
+
+<script>
+const STORAGE_KEY = 'sim_v5_0_couple_input_data';
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadSavedData();
+  toggleCoupleMode();
+  handleWorkStyleChange();
+
+  const elements = document.querySelectorAll('input, select');
+  elements.forEach(el => {
+    el.addEventListener('input', saveCurrentData);
+    el.addEventListener('change', saveCurrentData);
+  });
+});
+
+function toggleCoupleMode() {
+  const isCouple = document.getElementById('isCouple').value === 'couple';
+  const spouseFields = document.querySelectorAll('.spouse-field');
+  spouseFields.forEach(el => {
+    el.style.display = isCouple ? '' : 'none';
+  });
+}
+
+function handleWorkStyleChange() {
+  const styleSelf = document.getElementById('workStyle60').value;
+  const inputSelf = document.getElementById('workIncome60');
+  if (styleSelf === 'retired') {
+    inputSelf.value = 0;
+    inputSelf.disabled = true;
+  } else {
+    inputSelf.disabled = false;
+  }
+
+  const styleSpouse = document.getElementById('workStyle60Spouse').value;
+  const inputSpouse = document.getElementById('workIncome60Spouse');
+  if (styleSpouse === 'retired') {
+    inputSpouse.value = 0;
+    inputSpouse.disabled = true;
+  } else {
+    inputSpouse.disabled = false;
+  }
+}
+
+function saveCurrentData() {
+  const elements = document.querySelectorAll('input, select');
+  const data = {};
+  elements.forEach(el => {
+    if (el.id && !el.id.startsWith('cfg_')) {
+      data[el.id] = el.value;
+    }
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadSavedData() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return;
+  try {
+    const data = JSON.parse(saved);
+    Object.keys(data).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.value = data[id];
+      }
+    });
+  } catch (e) {
+    console.error('保存データの読み込みに失敗しました', e);
+  }
+}
+
+function resetForm() {
+  if (confirm('入力内容を初期値に戻しますか？')) {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+}
+
+/* モーダル関連処理 */
+function openConfigModal() {
+  document.getElementById('cfg_taxFree1').value = TAX_CONFIG.taxFreeThresholds.class1;
+  document.getElementById('cfg_taxFree2').value = TAX_CONFIG.taxFreeThresholds.class2;
+  document.getElementById('cfg_taxFree3').value = TAX_CONFIG.taxFreeThresholds.class3;
+
+  document.getElementById('cfg_empMin').value = TAX_CONFIG.deductions.employmentMin;
+  document.getElementById('cfg_penUnder65').value = TAX_CONFIG.deductions.pensionUnder65;
+
+  document.getElementById('cfg_socTaxFreeBase').value = TAX_CONFIG.socialInsurance.taxFreeBaseAmount;
+  document.getElementById('cfg_socTaxableBase').value = TAX_CONFIG.socialInsurance.taxableBaseAmount;
+  document.getElementById('cfg_socTaxableRate').value = (TAX_CONFIG.socialInsurance.taxableRate * 100).toFixed(1);
+
+  document.getElementById('cfg_penAge60Rate').value = Math.round(TAX_CONFIG.pensionRates.age60EarlyRate * 100);
+  document.getElementById('cfg_retireRate').value = Math.round(TAX_CONFIG.lumpSumNetRates.retirementPay * 100);
+
+  document.getElementById('configModal').style.display = 'flex';
+}
+
+function closeConfigModal() {
+  document.getElementById('configModal').style.display = 'none';
+}
+
+function saveConfigModal() {
+  const newConfig = JSON.parse(JSON.stringify(TAX_CONFIG));
+
+  newConfig.taxFreeThresholds.class1 = parseFloat(document.getElementById('cfg_taxFree1').value) || 0;
+  newConfig.taxFreeThresholds.class2 = parseFloat(document.getElementById('cfg_taxFree2').value) || 0;
+  newConfig.taxFreeThresholds.class3 = parseFloat(document.getElementById('cfg_taxFree3').value) || 0;
+
+  newConfig.deductions.employmentMin = parseFloat(document.getElementById('cfg_empMin').value) || 0;
+  newConfig.deductions.pensionUnder65 = parseFloat(document.getElementById('cfg_penUnder65').value) || 0;
+
+  newConfig.socialInsurance.taxFreeBaseAmount = parseFloat(document.getElementById('cfg_socTaxFreeBase').value) || 0;
+  newConfig.socialInsurance.taxableBaseAmount = parseFloat(document.getElementById('cfg_socTaxableBase').value) || 0;
+  newConfig.socialInsurance.taxableRate = (parseFloat(document.getElementById('cfg_socTaxableRate').value) || 0) / 100;
+
+  newConfig.pensionRates.age60EarlyRate = (parseFloat(document.getElementById('cfg_penAge60Rate').value) || 0) / 100;
+  
+  const retireRate = (parseFloat(document.getElementById('cfg_retireRate').value) || 0) / 100;
+  newConfig.lumpSumNetRates.retirementPay = retireRate;
+  newConfig.lumpSumNetRates.corpDc = retireRate;
+  newConfig.lumpSumNetRates.ideco = retireRate;
+
+  saveTaxConfig(newConfig);
+  closeConfigModal();
+  calculate();
+}
+
+function resetConfigModal() {
+  if (confirm('税制パラメータをすべて既定の初期値に戻しますか？')) {
+    resetTaxConfigToDefault();
+    openConfigModal();
+  }
+}
+
+function calculate() {
+  const errorDiv = document.getElementById('errorMessage');
+  const resultCard = document.getElementById('resultCard');
+  
+  errorDiv.style.display = 'none';
+  errorDiv.innerHTML = '';
+
+  const isCouple = document.getElementById('isCouple').value === 'couple';
+  const dobVal = document.getElementById('dob').value;
+  if (!dobVal) {
+    showError('⚠️ 本人の生年月日を入力してください。');
+    return;
+  }
+
+  const birthDate = new Date(dobVal);
+  const today = new Date();
+  
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  if (age < 50 || age > 64) {
+    showError(`⚠️ <strong>対象外の年齢（本人現在 ${age}歳）です。</strong><br>本ツールは60代に向けたシミュレーターです。本人の生年月日は50歳〜64歳の方の範囲で設定してください。`);
+    return;
+  }
+
+  function showError(msg) {
+    errorDiv.innerHTML = msg;
+    errorDiv.style.display = 'block';
+    resultCard.style.display = 'none';
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  const zip = document.getElementById('zip').value;
+  const retireAge = parseInt(document.getElementById('retireAge').value) || 65;
+  const basePension = parseFloat(document.getElementById('basePension').value) || 0;
+
+  const retireAgeSpouse = isCouple ? (parseInt(document.getElementById('retireAgeSpouse').value) || 65) : 65;
+  const basePensionSpouse = isCouple ? (parseFloat(document.getElementById('basePensionSpouse').value) || 0) : 0;
+
+  const cash = parseFloat(document.getElementById('cash').value) || 0;
+  const stocks = parseFloat(document.getElementById('stocks').value) || 0;
+  const stockYield = (parseFloat(document.getElementById('stockYield').value) || 0) / 100;
+  const bonds = parseFloat(document.getElementById('bonds').value) || 0;
+  
+  const earlyRetirePay = parseFloat(document.getElementById('earlyRetirePay').value) || 0;
+  const earlyRetireAge = parseInt(document.getElementById('earlyRetireAge').value) || 55;
+  const retirementPay = parseFloat(document.getElementById('retirementPay').value) || 0;
+  const retirePayAge = parseInt(document.getElementById('retirePayAge').value) || 60;
+  const corpDc = parseFloat(document.getElementById('corpDc').value) || 0;
+  const corpDcMethod = document.getElementById('corpDcMethod').value;
+  const ideco = parseFloat(document.getElementById('ideco').value) || 0;
+  const idecoPayAge = parseInt(document.getElementById('idecoPayAge').value) || 65;
+  const idecoPayMethod = document.getElementById('idecoPayMethod').value;
+
+  const earlyRetirePaySpouse = isCouple ? (parseFloat(document.getElementById('earlyRetirePaySpouse').value) || 0) : 0;
+  const retirementPaySpouse = isCouple ? (parseFloat(document.getElementById('retirementPaySpouse').value) || 0) : 0;
+  const retirePayAgeSpouse = isCouple ? (parseInt(document.getElementById('retirePayAgeSpouse').value) || 60) : 60;
+  const idecoSpouse = isCouple ? (parseFloat(document.getElementById('idecoSpouse').value) || 0) : 0;
+  const idecoPayAgeSpouse = isCouple ? (parseInt(document.getElementById('idecoPayAgeSpouse').value) || 65) : 65;
+  const idecoPayMethodSpouse = isCouple ? document.getElementById('idecoPayMethodSpouse').value : 'lump';
+
+  const monthlyLiving = parseFloat(document.getElementById('monthlyLiving').value) || 0;
+  const workIncome60 = parseFloat(document.getElementById('workIncome60').value) || 0;
+  const workIncome60Spouse = isCouple ? (parseFloat(document.getElementById('workIncome60Spouse').value) || 0) : 0;
+  const propertyTax = parseFloat(document.getElementById('propertyTax').value) || 0;
+  const carCost = parseFloat(document.getElementById('carCost').value) || 0;
+
+  // --- 1. 級地の判定 ---
+  const zip3 = zip.replace('-', '').substring(0, 3);
+  let kyuchi = "3級地 (地方・町村部)";
+  let taxFreeThreshold = TAX_CONFIG.taxFreeThresholds.class3;
+
+  if (TAX_CONFIG.zipClassMapping.class1Prefixes.includes(zip3)) {
+    kyuchi = "1級地 (大都市部)";
+    taxFreeThreshold = TAX_CONFIG.taxFreeThresholds.class1;
+  } else if (TAX_CONFIG.zipClassMapping.class2Prefixes.includes(zip3)) {
+    kyuchi = "2級地 (地方中核都市)";
+    taxFreeThreshold = TAX_CONFIG.taxFreeThresholds.class2;
+  }
+
+  // --- 2. 年金受給額 ---
+  let actualPension60to65 = 0;
+  if (retireAge === 60) {
+    actualPension60to65 = basePension * TAX_CONFIG.pensionRates.age60EarlyRate;
+  }
+
+  let actualPensionSpouse60to65 = 0;
+  if (isCouple && retireAgeSpouse === 60) {
+    actualPensionSpouse60to65 = basePensionSpouse * TAX_CONFIG.pensionRates.age60EarlyRate;
+  }
+
+  // --- 3. 重複ルール警告 & 控除調整 ---
+  let ruleWarningHtml = "";
+  let selfRetireFactor = TAX_CONFIG.lumpSumNetRates.retirementPay;
+  let spouseRetireFactor = TAX_CONFIG.lumpSumNetRates.retirementPay;
+
+  if (earlyRetirePay > 0) {
+    let gap = retirePayAge - earlyRetireAge;
+    if (gap < 19) {
+      selfRetireFactor = TAX_CONFIG.lumpSumNetRates.retirementPay * 0.95; // 重複時微減
+      ruleWarningHtml += `<span class="warn-tag">⚠️ 本人：19年ルール（重複調整）対象</span> 50代退職金と60代退職金の間隔が${gap}年のため調整される可能性があります。<br>`;
+    }
+  }
+
+  if (idecoPayMethod === "lump") {
+    let yearDiff = Math.abs(idecoPayAge - retirePayAge);
+    if (yearDiff < 10) {
+      ruleWarningHtml += `<span class="warn-tag">⚠️ 本人：10年ルール注意</span> iDeCoと定年退職金の受取間隔が${yearDiff}年のため重複調整の可能性があります。<br>`;
+    }
+  }
+
+  if (isCouple && idecoPayMethodSpouse === "lump" && retirementPaySpouse > 0) {
+    let yearDiffSpouse = Math.abs(idecoPayAgeSpouse - retirePayAgeSpouse);
+    if (yearDiffSpouse < 10) {
+      ruleWarningHtml += `<span class="warn-tag">⚠️ 配偶者：10年ルール注意</span> iDeCoと退職金の受取間隔が${yearDiffSpouse}年のため重複調整の可能性があります。`;
+    }
+  }
+
+  // --- 4. 所得・社会保険料計算 ---
+  let corpDcAnnualAnnuity60to65 = corpDcMethod === "annuity" ? (corpDc / 10) : 0;
+  let idecoAnnualAnnuity60to65 = (idecoPayMethod === "annuity" && idecoPayAge <= 60) ? (ideco / 10) : 0;
+  let idecoAnnualAnnuitySpouse60to65 = (isCouple && idecoPayMethodSpouse === "annuity" && idecoPayAgeSpouse <= 60) ? (idecoSpouse / 10) : 0;
+
+  let empIncomeSelf = Math.max(0, workIncome60 - TAX_CONFIG.deductions.employmentMin); 
+  let totalAnnuitySelf = actualPension60to65 + idecoAnnualAnnuity60to65 + corpDcAnnualAnnuity60to65;
+  let pensionDeductionSelf = totalAnnuitySelf > 0 ? TAX_CONFIG.deductions.pensionUnder65 : 0;
+  let pensionIncomeSelf = Math.max(0, totalAnnuitySelf - pensionDeductionSelf);
+  let totalIncomeSelf = empIncomeSelf + pensionIncomeSelf;
+
+  let empIncomeSpouse = Math.max(0, workIncome60Spouse - TAX_CONFIG.deductions.employmentMin); 
+  let totalAnnuitySpouse = actualPensionSpouse60to65 + idecoAnnualAnnuitySpouse60to65;
+  let pensionDeductionSpouse = totalAnnuitySpouse > 0 ? TAX_CONFIG.deductions.pensionUnder65 : 0;
+  let pensionIncomeSpouse = Math.max(0, totalAnnuitySpouse - pensionDeductionSpouse);
+  let totalIncomeSpouse = isCouple ? (empIncomeSpouse + pensionIncomeSpouse) : 0;
+
+  let isTaxFreeSelf = totalIncomeSelf <= taxFreeThreshold;
+  let isTaxFreeSpouse = isCouple ? (totalIncomeSpouse <= taxFreeThreshold) : true;
+
+  let estimatedSocInsSelf = isTaxFreeSelf 
+    ? TAX_CONFIG.socialInsurance.taxFreeBaseAmount 
+    : Math.round(totalIncomeSelf * TAX_CONFIG.socialInsurance.taxableRate + TAX_CONFIG.socialInsurance.taxableBaseAmount);
+    
+  let estimatedSocInsSpouse = isCouple 
+    ? (isTaxFreeSpouse 
+        ? TAX_CONFIG.socialInsurance.taxFreeBaseAmount 
+        : Math.round(totalIncomeSpouse * TAX_CONFIG.socialInsurance.taxableRate + TAX_CONFIG.socialInsurance.taxableBaseAmount)) 
+    : 0;
+    
+  let totalEstimatedSocIns = estimatedSocInsSelf + estimatedSocInsSpouse;
+
+  // --- 5. キャッシュフロー計算 ---
+  const totalAnnualOutflow = (monthlyLiving * 12) + propertyTax + carCost + totalEstimatedSocIns;
+  const totalInflow60to65 = workIncome60 + workIncome60Spouse + actualPension60to65 + actualPensionSpouse60to65 + idecoAnnualAnnuity60to65 + idecoAnnualAnnuitySpouse60to65 + corpDcAnnualAnnuity60to65;
+  const annualDeficit60to65 = Math.max(0, totalAnnualOutflow - totalInflow60to65);
+
+  const pensionPost65Self = (retireAge === 60 ? basePension * TAX_CONFIG.pensionRates.age60EarlyRate : (retireAge === 70 ? 0 : basePension));
+  const pensionPost65Spouse = isCouple ? (retireAgeSpouse === 60 ? basePensionSpouse * TAX_CONFIG.pensionRates.age60EarlyRate : (retireAgeSpouse === 70 ? 0 : basePensionSpouse)) : 0;
+  const annualDeficit65to70 = Math.max(0, totalAnnualOutflow - (pensionPost65Self + pensionPost65Spouse));
+
+  const total10YrDeficit = (annualDeficit60to65 * 5) + (annualDeficit65to70 * 5);
+
+  let corpDcLumpCash = corpDcMethod === "lump" ? (corpDc * TAX_CONFIG.lumpSumNetRates.corpDc) : 0;
+  let idecoLumpCash = idecoPayMethod === "lump" ? (ideco * TAX_CONFIG.lumpSumNetRates.ideco) : 0;
+  let idecoLumpCashSpouse = (isCouple && idecoPayMethodSpouse === "lump") ? (idecoSpouse * TAX_CONFIG.lumpSumNetRates.ideco) : 0;
+
+  let remainingCash = cash + (earlyRetirePay * TAX_CONFIG.lumpSumNetRates.retirementPay) + (earlyRetirePaySpouse * TAX_CONFIG.lumpSumNetRates.retirementPay);
+  let remainingStocks = stocks * Math.pow(1 + stockYield, 10);
+
+  const totalLumpSumCash = (retirementPay * selfRetireFactor) + (retirementPaySpouse * spouseRetireFactor) + corpDcLumpCash + idecoLumpCash + idecoLumpCashSpouse;
+  remainingCash += totalLumpSumCash;
+
+  if (remainingCash >= total10YrDeficit) {
+    remainingCash -= total10YrDeficit;
+  } else {
+    let shortage = total10YrDeficit - remainingCash;
+    remainingCash = 0;
+    remainingStocks = Math.max(0, remainingStocks - shortage);
+  }
+
+  // --- 6. 結果描画 ---
+  resultCard.style.display = 'block';
+  document.getElementById('kyuchiInfo').innerHTML = `<strong>判定地域区分:</strong> ${kyuchi}（非課税目安所得: ${taxFreeThreshold}万円以下/人）`;
+  
+  let pensionDesc = `本人公的年金: ${retireAge}歳受給開始 / 配偶者公的年金: ${isCouple ? retireAgeSpouse + '歳受給開始' : 'なし'}`;
+  document.getElementById('pensionInfo').innerText = pensionDesc;
+  document.getElementById('taxRuleWarning').innerHTML = ruleWarningHtml;
+  document.getElementById('socInsurance').innerText = totalEstimatedSocIns;
+
+  const taxStatusDiv = document.getElementById('taxStatus');
+  let taxMsg = `本人所得: ${totalIncomeSelf.toFixed(1)}万円 (${isTaxFreeSelf ? '非課税' : '課税'})`;
+  if (isCouple) taxMsg += ` / 配偶者所得: ${totalIncomeSpouse.toFixed(1)}万円 (${isTaxFreeSpouse ? '非課税' : '課税'})`;
+  
+  if (isTaxFreeSelf && isTaxFreeSpouse) {
+    taxStatusDiv.innerHTML = `<span class="safe-tag">夫婦ともに住民税非課税ライン相当</span> ${taxMsg}`;
+  } else {
+    taxStatusDiv.innerHTML = `<span class="alert-tag">課税対象ゾーンあり</span> ${taxMsg}`;
+  }
+
+  document.getElementById('yearlyWithdrawal').innerText = annualDeficit60to65.toFixed(1);
+  document.getElementById('monthlyWithdrawal').innerText = (annualDeficit60to65 / 12).toFixed(1);
+
+  const tbody = document.getElementById('assetTableBody');
+  tbody.innerHTML = `
+    <tr><td>現金預金（世帯・50代退職金含）</td><td>${cash + earlyRetirePay + earlyRetirePaySpouse} 万円</td><td>${remainingCash.toFixed(1)} 万円</td></tr>
+    <tr><td>株式・投資信託（世帯）</td><td>${stocks} 万円</td><td>${remainingStocks.toFixed(1)} 万円</td></tr>
+    <tr><td>債券（世帯）</td><td>${bonds} 万円</td><td>${bonds} 万円</td></tr>
+    <tr><td>本人60代以降の退職金・DC・iDeCo</td><td>${retirementPay + corpDc + ideco} 万円</td><td>※受取設定に基づき現金化・取り崩し充当済</td></tr>
+    ${isCouple ? `<tr><td>配偶者60代以降の退職金・iDeCo</td><td>${retirementPaySpouse + idecoSpouse} 万円</td><td>※受取設定に基づき現金化・取り崩し充当済</td></tr>` : ''}
+  `;
+}
+</script>
+
+</body>
+</html>
