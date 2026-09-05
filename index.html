@@ -811,7 +811,7 @@ function calculate() {
     }
   }
 
-  // --- 4. 所得・社会保険料計算 ---
+  // --- 4. 所得・社会保険料計算 (60〜65歳) ---
   let corpDcAnnualAnnuity60to65 = corpDcMethod === "annuity" ? (corpDc / 10) : 0;
   let idecoAnnualAnnuity60to65 = (idecoPayMethod === "annuity" && idecoPayAge <= 60) ? (ideco / 10) : 0;
   let idecoAnnualAnnuitySpouse60to65 = (isCouple && idecoPayMethodSpouse === "annuity" && idecoPayAgeSpouse <= 60) ? (idecoSpouse / 10) : 0;
@@ -843,6 +843,17 @@ function calculate() {
     
   let totalEstimatedSocIns = estimatedSocInsSelf + estimatedSocInsSpouse;
 
+  // --- 4b. 65〜70歳側の年金・DC・iDeCo収入 [FIX] ---
+  // 企業DC年金(10年分割)は受取開始年齢の固定入力欄がなく60歳開始を前提にしているため、
+  // 60〜70歳の全期間に渡って収入が発生する。
+  // iDeCoは受取年齢が60/65/70から選べるため、10年分割の受給期間が65〜70歳の窓と重なるかを判定する。
+  //   受取年齢60歳 → 60〜70歳(10年)が丸ごと窓に収まる → 65〜70歳にも計上
+  //   受取年齢65歳 → 65〜75歳のうち65〜70歳(前半5年)が窓に収まる → 65〜70歳に計上
+  //   受取年齢70歳 → 70〜80歳で65〜70歳の窓の外 → 計上しない
+  let corpDcAnnualAnnuity65to70 = corpDcMethod === "annuity" ? (corpDc / 10) : 0;
+  let idecoAnnualAnnuity65to70 = (idecoPayMethod === "annuity" && idecoPayAge <= 65) ? (ideco / 10) : 0;
+  let idecoAnnualAnnuitySpouse65to70 = (isCouple && idecoPayMethodSpouse === "annuity" && idecoPayAgeSpouse <= 65) ? (idecoSpouse / 10) : 0;
+
   // --- 5. キャッシュフロー計算 ---
   const totalAnnualOutflow = (monthlyLiving * 12) + propertyTax + carCost + totalEstimatedSocIns;
   const totalInflow60to65 = workIncome60 + workIncome60Spouse + actualPension60to65 + actualPensionSpouse60to65 + idecoAnnualAnnuity60to65 + idecoAnnualAnnuitySpouse60to65 + corpDcAnnualAnnuity60to65;
@@ -850,7 +861,9 @@ function calculate() {
 
   const pensionPost65Self = (retireAge === 60 ? basePension * TAX_CONFIG.pensionRates.age60EarlyRate : (retireAge === 70 ? 0 : basePension));
   const pensionPost65Spouse = isCouple ? (retireAgeSpouse === 60 ? basePensionSpouse * TAX_CONFIG.pensionRates.age60EarlyRate : (retireAgeSpouse === 70 ? 0 : basePensionSpouse)) : 0;
-  const annualDeficit65to70 = Math.max(0, totalAnnualOutflow - (pensionPost65Self + pensionPost65Spouse));
+  // [FIX] 65〜70歳の収入に、公的年金だけでなく企業DC・iDeCoの年金受取分も加算する
+  const totalInflow65to70 = pensionPost65Self + pensionPost65Spouse + corpDcAnnualAnnuity65to70 + idecoAnnualAnnuity65to70 + idecoAnnualAnnuitySpouse65to70;
+  const annualDeficit65to70 = Math.max(0, totalAnnualOutflow - totalInflow65to70);
 
   const total10YrDeficit = (annualDeficit60to65 * 5) + (annualDeficit65to70 * 5);
 
